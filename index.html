@@ -100,10 +100,11 @@
                 <div id="ribbonRemate" class="remate-ribbon">REMATE</div>
 
                 <img id="mainImage"
+                     draggable="false"
                      src="fotos/IMG_20261119_103133_edit_120512449509235.jpg"
                      alt="Line 6 Spider III HD150"
                      onclick="abrirModal(this.src)"
-                     class="w-full h-full object-contain transition-opacity duration-150 cursor-zoom-in">
+                     class="w-full h-full object-contain transition-opacity duration-150 cursor-zoom-in select-none touch-pan-y">
 
                 <button type="button" onclick="fotoAnterior()" aria-label="Foto anterior"
                         class="absolute left-2.5 top-1/2 -translate-y-1/2 bg-black/65 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center z-20 transition">
@@ -353,5 +354,63 @@
             setTimeout(initMap, 600);
         })();
     </script>
+
+    <script id="scriptSwipeGaleria">
+        (function activarSwipe() {
+            const img = document.getElementById('mainImage');
+            if (!img) return;
+
+            let startX = 0;
+            let startY = 0;
+            let moved = false;
+            const UMBRAL_SWIPE = 45;
+
+            img.addEventListener('touchstart', (e) => {
+                if (!e.touches || !e.touches.length) return;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                moved = false;
+            }, { passive: true });
+
+            img.addEventListener('touchmove', (e) => {
+                if (!e.touches || !e.touches.length) return;
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+                    moved = true;
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            img.addEventListener('touchend', (e) => {
+                if (!e.changedTouches || !e.changedTouches.length) return;
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const dx = endX - startX;
+                const dy = endY - startY;
+
+                if (Math.abs(dx) >= UMBRAL_SWIPE && Math.abs(dx) > Math.abs(dy)) {
+                    // Evita que el clic posterior abra el modal de zoom tras deslizar
+                    img.dataset.skipClick = '1';
+                    setTimeout(() => { delete img.dataset.skipClick; }, 250);
+
+                    if (dx < 0 && typeof fotoSiguiente === 'function') {
+                        fotoSiguiente();
+                    } else if (dx > 0 && typeof fotoAnterior === 'function') {
+                        fotoAnterior();
+                    }
+                }
+            }, { passive: true });
+
+            const abrirModalOriginal = window.abrirModal;
+            if (typeof abrirModalOriginal === 'function') {
+                window.abrirModal = function(src) {
+                    if (img.dataset.skipClick === '1') return;
+                    return abrirModalOriginal(src);
+                };
+            }
+        })();
+    </script>
+
 </body>
 </html>
